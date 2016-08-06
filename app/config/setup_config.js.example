@@ -1,0 +1,14 @@
+var uuid = require('node-uuid').v1();
+
+module.exports = {
+	user: {
+		uuid: uuid,
+		name: 'Harianto van Insulinde'
+	},
+	user_credentials: {
+		uuid: uuid,
+		username: 'harianto',
+		password: 'MyS3cr3tPassw0rd',
+		admin: true
+	}
+}
