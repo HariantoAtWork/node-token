@@ -152,4 +152,5 @@ sftp-config.json
 # ---------------------
 # Node App Ignores
 
+app/config/setup_config.js
 uuid
