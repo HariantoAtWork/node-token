@@ -3,9 +3,10 @@ var express     = require('express'),
 
 var routes      = express.Router();
 
-var Users       = require('../models/users'),
-	uuid        = require('../config/uuid');
-
+var Users               = require('../models/users'), // get our lokijs model
+	User_credentials    = require('../models/user_credentials'), // get our lokijs model
+	db                  = require('../core/database'),
+	app_uuid            = require('../core/uuid');
 
 // TODO: route to authenticate a user (POST http://localhost:8080/api/authenticate)
 
@@ -23,23 +24,27 @@ var onError = function(error) {
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 routes.post('/authenticate', function(req, res) {
 
-	Users()
-		.done(function(users) {
-			var user = users.findOne({ 'name': req.body.name});
 
-			if (user) {
+	User_credentials()
+		.done(function(credentials) {
+			var found_credential = credentials.findOne({ 'username': req.body.username});
+
+			console.log(found_credential);
+			console.log(req.body);
+
+			if (found_credential) {
 				// check password
-				if (user.password != req.body.password) {
+				if (found_credential.password != req.body.password) {
 					res.json({ success: false, message: 'Authentication failed. Wrong password.' });
 
 				} else {
 					var claims = {
-						sub:  user.uuid,
+						sub:  found_credential.uuid,
 						iss:  'https://sylo.space'
 					}
 					// if user is found and password is right
 					// create a token
-					var token = jwt.sign(claims, uuid, {
+					var token = jwt.sign(claims, app_uuid, {
 						expiresIn: 60*60*24 // expires in 24 hours
 					});
 
@@ -73,7 +78,7 @@ routes.use(function(req, res, next) {
 	if (token) {
 
 	    // verifies secret and checks exp
-	    jwt.verify(token, uuid, function(err, decoded) {      
+	    jwt.verify(token, app_uuid, function(err, decoded) {      
 	    	if (err) {
 	    		return res.json({ success: false, message: 'Failed to authenticate token.' });  
 

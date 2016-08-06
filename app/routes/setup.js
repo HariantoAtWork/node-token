@@ -1,48 +1,70 @@
 var express     = require('express'),
 	_uuid       = require('node-uuid');
 
-var router      = express.Router();
-var Users       = require('../models/users'), // get our lokijs model
-	db          = require('../core/database');
+var router              = express.Router();
+var Users               = require('../models/users'), // get our lokijs model
+	User_credentials    = require('../models/user_credentials'), // get our lokijs model
+	db                  = require('../core/database'),
+	credential_data     = require('../config/setup_config');
 
 router.get('/setup', function(req, res) {
 	//create a sample user
 
+	var uuid = _uuid.v1();
+
 	// compose data
-	var user = {
-		uuid: _uuid,
-		name: 'Harianto van Insulinde',
-		password: 'Hariant0',
-		admin: true
-	};
+	var data = credential_data;
 
-	Users()
-		.done(function(users){
-			var found = users.findOne({ 'name': user.name });
+	// Load Users_credentials -table
+	User_credentials()
+		.done(function(credentials){
+			// Load Users -table
+			Users()
+				.done(function(users){
+					var found_credential,
+						credential,
+						found_user,
+						user;
 
-			if(!found) {
-				// insert record to Users
-				var item = users.insert(user);
-				try {
-					// Users.update(user);
-					db.saveDatabase();
-					
-					res.json({
-						success: true,
-						data: item
-					})
-				} catch(err) {
-					res.json({
-						success: false,
-						message: err
-					})
-				}
-			} else {
-				res.json({ 
-					success: false, 
-					message: 'User already exist' });
-				
-			}
+					found_credential = credentials.findOne({ 'username': data.user_credentials.username });
+					found_user       = users.findOne({ 'uuid': uuid });
+
+					if (!found_credential) {
+						inserted_credential = credentials.insert( data.user_credentials );
+
+						try {
+							db.saveDatabase();
+							console.log('credentials saved');
+
+							if(!found_user) {
+								inserted_user       = users.insert( data.user );
+								console.log('user saved');
+
+							} else {
+								updated_user        = users.update( data.user );
+								console.log('user saved');
+							}
+							db.saveDatabase();
+
+							return res.json({
+								success: true,
+								data: inserted_user
+							})
+
+						} catch(err) {
+							return res.json({ 
+							success: false, 
+							message: 'Saving credentials error' });
+						}
+
+
+					} else {
+						return res.json({ 
+							success: false, 
+							message: 'User already exist' });
+					}
+
+				});
 
 		}, res.send.bind(res))
 
