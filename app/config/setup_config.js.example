@@ -9,6 +9,6 @@ module.exports = {
 		uuid: uuid,
 		username: 'harianto',
 		password: 'MyS3cr3tPassw0rd',
-		admin: true
+		roles: ['admin']
 	}
 }
