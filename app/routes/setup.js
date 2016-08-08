@@ -7,6 +7,9 @@ var Users               = require('../models/users'), // get our lokijs model
 	db                  = require('../core/database'),
 	credential_data     = require('../config/setup_config');
 
+// for logging
+eval("var log = " + require('../../log'));
+
 router.get('/setup', function(req, res) {
 	//create a sample user
 
@@ -34,15 +37,15 @@ router.get('/setup', function(req, res) {
 
 						try {
 							db.saveDatabase();
-							console.log('credentials saved');
+							log('credentials saved');
 
 							if(!found_user) {
 								inserted_user       = users.insert( data.user );
-								console.log('user saved');
+								log('user saved');
 
 							} else {
 								updated_user        = users.update( data.user );
-								console.log('user saved');
+								log('user updated');
 							}
 							db.saveDatabase();
 

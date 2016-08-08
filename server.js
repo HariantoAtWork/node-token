@@ -5,18 +5,18 @@ var express     = require('express'),
 	bodyParser  = require('body-parser'),
 	morgan      = require('morgan');
 
-var Memory      = require('./app/core/memory');
 
 var app         = express();
 // var mongoose    = require('mongoose');
 var path = require('path');
-global.APP_ROOT_PATH = path.resolve(__dirname);
 
+var Memory      = require('./app/core/memory');
+Memory.set('APP_ROOT_PATH', path.resolve(__dirname));
 
 var config = require('./config'); // get our config file
+// for logging
+eval("var log = " + require('./log'));
 
-
-    
 // =======================
 // configuration =========
 // =======================
@@ -52,4 +52,4 @@ app.use('/api', require('./app/routes/api'));
 // start the server ======
 // =======================
 app.listen(port);
-console.log('Magic happens at http://localhost:' + port);
+log('Magic happens at http://localhost:' + port);

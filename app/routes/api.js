@@ -1,36 +1,34 @@
 var express     = require('express'),
-	jwt         = require('jsonwebtoken'); // used to create, sign, and verify tokens
+	router      = express.Router();
 
-var routes      = express.Router();
+var jwt         = require('jsonwebtoken'), // used to create, sign, and verify tokens
+	_uuid       = require('node-uuid');
+
+var middlewares         = require('./v1/middlewares'); // collection of middlewares
 
 var Users               = require('../models/users'), // get our lokijs model
 	User_credentials    = require('../models/user_credentials'), // get our lokijs model
 	db                  = require('../core/database'),
 	app_uuid            = require('../core/uuid');
 
+// declare 'log' function
+eval("var log = " + require('../../log'));
+
 // TODO: route to authenticate a user (POST http://localhost:8080/api/authenticate)
 
 // TODO: route middleware to verify a token
 
 
-
-var onError = function(error) {
-	this.json({
-		success: false,
-		message: error
-	})
-}
-
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
-routes.post('/authenticate', function(req, res) {
+router.post('/authenticate', function(req, res) {
 
 
 	User_credentials()
 		.done(function(credentials) {
 			var found_credential = credentials.findOne({ 'username': req.body.username});
 
-			console.log(found_credential);
-			console.log(req.body);
+			log(found_credential);
+			log(req.body);
 
 			if (found_credential) {
 				// check password
@@ -39,6 +37,7 @@ routes.post('/authenticate', function(req, res) {
 
 				} else {
 					var claims = {
+						jti:  _uuid.v1(), // timed uuid
 						sub:  found_credential.uuid,
 						iss:  'https://sylo.space'
 					}
@@ -54,6 +53,20 @@ routes.post('/authenticate', function(req, res) {
 						message: 'Enjoy your token!',
 						token: token
 					});
+
+					// ----------
+					    // verifies secret and checks exp
+					    jwt.verify(token, app_uuid, function(err, decoded) {      
+					    	if (err) {
+					    		
+					    	} else {
+						        // if everything is good, save to request for use in other routes
+						       log('\n',decoded)
+
+						    }
+
+					    });
+					// ----------
 				}
 			} else {
 				// bad authentication
@@ -62,55 +75,24 @@ routes.post('/authenticate', function(req, res) {
 			}
 
 
-		}, onError.bind(res));
+		}, middlewares.onError.bind(res));
 });
 
-
+router.use('/v1', require('./v1/index'));
+// This order is important!
+// This goes after '/authenticate'
 // route middleware to verify a token
-routes.use(function(req, res, next) {
-
-
-	// check header or url parameters or post parameters for token
-	var token = req.body.token || req.query.token || req.headers['x-access-token'];
-
-	console.log('Middleware - token: '+token);
-	// decode token
-	if (token) {
-
-	    // verifies secret and checks exp
-	    jwt.verify(token, app_uuid, function(err, decoded) {      
-	    	if (err) {
-	    		return res.json({ success: false, message: 'Failed to authenticate token.' });  
-
-	    	} else {
-		        // if everything is good, save to request for use in other routes
-		        req.decoded = decoded;    
-		        next();
-
-		    }
-
-	    });
-
-	} else {
-		// if there is no token
-		// return an error
-		return res.status(403).send({ 
-			success: false, 
-			message: 'No token provided.' 
-		});
-	}
-
-});
+router.use(middlewares.route_validateToken);
 
 // route to show a random message (GET http://localhost:8080/api/)
-routes.get('/', function(req, res) {
+router.get('/', function(req, res) {
   res.json({ 
   	success: true,
   	data: 'Welcome to the coolest API on earth!' });
 });
 
 
-routes.get('/users', function(req, res) {
+router.get('/users', function(req, res) {
 	Users()
 		.done(
 			function(users){
@@ -124,4 +106,4 @@ routes.get('/users', function(req, res) {
 
 
 
-module.exports = routes;
+module.exports = router;
